@@ -1,11 +1,8 @@
-import logging
 from typing import Any
 
 import httpx
 
 from book_checker.models import LibraryAvailability, LibraryResult
-
-logger = logging.getLogger(__name__)
 
 VEGA_API_URL = "https://na5.iiivega.com/api/search-result/search/format-groups"
 

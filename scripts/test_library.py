@@ -7,17 +7,11 @@ Usage:
 """
 
 import asyncio
-import json
-import sys
-from pathlib import Path
-
-# Allow running from repo root
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from book_checker.library_client import VegaLibraryClient, parse_search_results
 
 
-async def test_search(client: VegaLibraryClient, label: str, raw: dict) -> None:
+async def test_search(label: str, raw: dict) -> None:
     """Print parsed results for a search."""
     print(f"\n{'=' * 60}")
     print(f"  {label}")
@@ -45,16 +39,16 @@ async def main() -> None:
     async with VegaLibraryClient() as client:
         # Title search: Wild Robot
         raw = await client.search_by_title("Wild Robot", page_size=3)
-        await test_search(client, 'Title search: "Wild Robot"', raw)
+        await test_search('Title search: "Wild Robot"', raw)
 
         # Title search: Wings of Fire
         raw = await client.search_by_title("Wings of Fire", page_size=3)
-        await test_search(client, 'Title search: "Wings of Fire"', raw)
+        await test_search('Title search: "Wings of Fire"', raw)
 
         # ISBN search
         isbn = "9780316382007"
         raw = await client.search_by_isbn(isbn, page_size=3)
-        await test_search(client, f"ISBN search: {isbn}", raw)
+        await test_search(f"ISBN search: {isbn}", raw)
 
 
 if __name__ == "__main__":
