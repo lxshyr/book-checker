@@ -84,8 +84,10 @@ def _parse_material_tab(tab: dict[str, Any]) -> LibraryAvailability:
 def parse_search_results(response: dict[str, Any]) -> list[LibraryResult]:
     """Parse a Vega API response into a list of LibraryResult objects.
 
-    Extracts availability data from materialTabs for each format group
-    in the search results. Only physical items are included.
+    Extracts availability data from materialTabs for each format group.
+    ``found`` is True when the item exists in the catalogue (any
+    materialTab present).  Physical availability details are recorded in
+    ``availabilities``.
     """
     results: list[LibraryResult] = []
     for item in response.get("data", []):
@@ -93,26 +95,26 @@ def parse_search_results(response: dict[str, Any]) -> list[LibraryResult]:
         agent = item.get("primaryAgent", {})
         author = agent.get("label") if agent else None
 
-        # Collect ISBNs from physical materialTabs
         isbn: str | None = None
         availabilities: list[LibraryAvailability] = []
+        tabs = item.get("materialTabs", [])
 
-        for tab in item.get("materialTabs", []):
-            if tab.get("type") != "physical":
-                continue
-
-            availabilities.append(_parse_material_tab(tab))
-
-            # Grab the first ISBN we find
+        for tab in tabs:
+            # Grab the first ISBN from any tab
             if isbn is None:
                 identified = tab.get("identifiedBy", {})
                 isbn_list = identified.get("isbn", [])
                 if isbn_list:
                     isbn = isbn_list[0]
 
+            if tab.get("type") != "physical":
+                continue
+
+            availabilities.append(_parse_material_tab(tab))
+
         results.append(
             LibraryResult(
-                found=bool(availabilities),
+                found=bool(tabs),
                 title=title,
                 author=author,
                 isbn=isbn,
