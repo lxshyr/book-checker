@@ -34,3 +34,22 @@ a lower confidence and a note explaining the uncertainty.
 4. Order the list roughly by position in the image (left-to-right, \
 top-to-bottom).
 """
+
+_FENCE_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+
+
+def parse_vlm_response(text: str) -> list[IdentifiedBook]:
+    """Parse a VLM response into a list of IdentifiedBook models.
+
+    Handles responses that may be wrapped in markdown code fences
+    (```json ... ```) and strips them before parsing.
+    """
+    text = text.strip()
+
+    # Strip markdown code fences if present.
+    match = _FENCE_RE.search(text)
+    if match:
+        text = match.group(1).strip()
+
+    raw: list[dict] = json.loads(text)
+    return [IdentifiedBook(**item) for item in raw]
