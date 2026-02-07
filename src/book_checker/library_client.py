@@ -67,31 +67,31 @@ class VegaLibraryClient:
         return {"data": []}
 
     async def search_by_title(
-        self, title: str, *, page_size: int = 5
+        self, title: str, *, page: int = 0, page_size: int = 5
     ) -> list[LibraryResult]:
         """Search by title using Vega search syntax t:(title)."""
-        raw = await self._search(f"t:({title})", page_size=page_size)
+        raw = await self._search(f"t:({title})", page=page, page_size=page_size)
         return parse_search_results(raw)
 
     async def search_by_author(
-        self, author: str, *, page_size: int = 5
+        self, author: str, *, page: int = 0, page_size: int = 5
     ) -> list[LibraryResult]:
         """Search by author using Vega search syntax a:(author)."""
-        raw = await self._search(f"a:({author})", page_size=page_size)
+        raw = await self._search(f"a:({author})", page=page, page_size=page_size)
         return parse_search_results(raw)
 
     async def search_by_isbn(
-        self, isbn: str, *, page_size: int = 5
+        self, isbn: str, *, page: int = 0, page_size: int = 5
     ) -> list[LibraryResult]:
         """Search by ISBN (plain string)."""
-        raw = await self._search(isbn, page_size=page_size)
+        raw = await self._search(isbn, page=page, page_size=page_size)
         return parse_search_results(raw)
 
     async def search_by_keyword(
-        self, keyword: str, *, page_size: int = 5
+        self, keyword: str, *, page: int = 0, page_size: int = 5
     ) -> list[LibraryResult]:
         """Search by keyword (general search text)."""
-        raw = await self._search(keyword, page_size=page_size)
+        raw = await self._search(keyword, page=page, page_size=page_size)
         return parse_search_results(raw)
 
 
