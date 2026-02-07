@@ -1,9 +1,12 @@
+import logging
 from typing import Any
 
 import httpx
 
 from book_checker.config import Settings, get_settings
 from book_checker.models import LibraryAvailability, LibraryResult
+
+logger = logging.getLogger(__name__)
 
 
 class VegaLibraryClient:
@@ -38,15 +41,30 @@ class VegaLibraryClient:
     async def _search(
         self, query: str, *, page: int = 0, page_size: int = 5
     ) -> dict:
-        """Execute a raw search and return the JSON response."""
+        """Execute a raw search and return the JSON response.
+
+        Returns an empty ``{"data": []}`` dict on network, HTTP, or
+        JSON-decoding errors so that callers always get a parseable
+        response.
+        """
         payload = {
             "searchText": query,
             "pageNum": page,
             "pageSize": page_size,
         }
-        resp = await self._client.post(self._api_url, json=payload)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await self._client.post(self._api_url, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "Vega API returned %s for query %r", exc.response.status_code, query
+            )
+        except httpx.RequestError as exc:
+            logger.warning("Vega API request failed for query %r: %s", query, exc)
+        except ValueError:
+            logger.warning("Vega API returned invalid JSON for query %r", query)
+        return {"data": []}
 
     async def search_by_title(
         self, title: str, *, page_size: int = 5
