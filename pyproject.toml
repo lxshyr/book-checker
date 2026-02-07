@@ -4,14 +4,13 @@ version = "0.1.0"
 description = "VLM-powered book identification and library availability service"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
+    "fastapi>=0.100",
     "uvicorn[standard]",
-    "openai",
+    "openai>=1",
     "httpx",
-    "pydantic",
-    "pydantic-settings",
+    "pydantic>=2",
+    "pydantic-settings>=2",
     "python-multipart",
-    "python-dotenv",
 ]
 
 [project.optional-dependencies]
@@ -24,7 +23,7 @@ dev = [
 
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]

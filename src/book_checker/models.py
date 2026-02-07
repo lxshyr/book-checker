@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from datetime import date
+
+from pydantic import BaseModel, Field
 
 
 class IdentifiedBook(BaseModel):
@@ -6,7 +8,7 @@ class IdentifiedBook(BaseModel):
     author: str | None = None
     series: str | None = None
     isbn: str | None = None
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)
     notes: str | None = None
 
 
@@ -14,7 +16,7 @@ class LibraryAvailability(BaseModel):
     location: str
     call_number: str | None = None
     status: str
-    due_date: str | None = None
+    due_date: date | None = None
 
 
 class LibraryResult(BaseModel):
