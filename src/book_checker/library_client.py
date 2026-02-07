@@ -52,6 +52,13 @@ class VegaLibraryClient:
         raw = await self._search(f"t:({title})", page_size=page_size)
         return parse_search_results(raw)
 
+    async def search_by_author(
+        self, author: str, *, page_size: int = 5
+    ) -> list[LibraryResult]:
+        """Search by author using Vega search syntax a:(author)."""
+        raw = await self._search(f"a:({author})", page_size=page_size)
+        return parse_search_results(raw)
+
     async def search_by_isbn(
         self, isbn: str, *, page_size: int = 5
     ) -> list[LibraryResult]:
