@@ -1,8 +1,8 @@
 """Manual test script for the Vega library API client.
 
-Usage:
-    python -m scripts.test_library
-    # or from repo root:
+Requires the package to be installed (``pip install -e .``).
+
+Usage (from repo root):
     python scripts/test_library.py
 """
 
