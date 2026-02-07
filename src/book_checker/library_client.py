@@ -65,20 +65,34 @@ class VegaLibraryClient:
         return await self._search(keyword, page_size=page_size)
 
 
-def _parse_material_tab(tab: dict[str, Any]) -> LibraryAvailability:
-    """Parse a single materialTab entry into a LibraryAvailability."""
+def _parse_material_tab(tab: dict[str, Any]) -> list[LibraryAvailability]:
+    """Parse a physical materialTab into one LibraryAvailability per location."""
+    call_number = tab.get("callNumber")
+    locations = tab.get("locations", [])
+
+    if locations:
+        return [
+            LibraryAvailability(
+                location=loc.get("label", "Unknown"),
+                call_number=call_number,
+                status=loc.get("availabilityStatus", "Unknown"),
+            )
+            for loc in locations
+        ]
+
+    # Fallback when no locations array is present
     availability = tab.get("availability", {})
     status_obj = availability.get("status", {})
     general_status = status_obj.get("general", "Unknown")
-
     location = tab.get("itemLibrary") or tab.get("name", "Unknown")
-    call_number = tab.get("callNumber")
 
-    return LibraryAvailability(
-        location=location,
-        call_number=call_number,
-        status=general_status,
-    )
+    return [
+        LibraryAvailability(
+            location=location,
+            call_number=call_number,
+            status=general_status,
+        )
+    ]
 
 
 def parse_search_results(response: dict[str, Any]) -> list[LibraryResult]:
@@ -110,7 +124,7 @@ def parse_search_results(response: dict[str, Any]) -> list[LibraryResult]:
             if tab.get("type") != "physical":
                 continue
 
-            availabilities.append(_parse_material_tab(tab))
+            availabilities.extend(_parse_material_tab(tab))
 
         results.append(
             LibraryResult(
