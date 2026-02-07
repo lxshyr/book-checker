@@ -47,19 +47,24 @@ class VegaLibraryClient:
 
     async def search_by_title(
         self, title: str, *, page_size: int = 5
-    ) -> dict:
+    ) -> list[LibraryResult]:
         """Search by title using Vega search syntax t:(title)."""
-        return await self._search(f"t:({title})", page_size=page_size)
+        raw = await self._search(f"t:({title})", page_size=page_size)
+        return parse_search_results(raw)
 
-    async def search_by_isbn(self, isbn: str, *, page_size: int = 5) -> dict:
+    async def search_by_isbn(
+        self, isbn: str, *, page_size: int = 5
+    ) -> list[LibraryResult]:
         """Search by ISBN (plain string)."""
-        return await self._search(isbn, page_size=page_size)
+        raw = await self._search(isbn, page_size=page_size)
+        return parse_search_results(raw)
 
     async def search_by_keyword(
         self, keyword: str, *, page_size: int = 5
-    ) -> dict:
+    ) -> list[LibraryResult]:
         """Search by keyword (general search text)."""
-        return await self._search(keyword, page_size=page_size)
+        raw = await self._search(keyword, page_size=page_size)
+        return parse_search_results(raw)
 
 
 def _parse_material_tab(tab: dict[str, Any]) -> list[LibraryAvailability]:

@@ -8,17 +8,16 @@ Usage:
 
 import asyncio
 
-from book_checker.library_client import VegaLibraryClient, parse_search_results
+from book_checker.library_client import VegaLibraryClient
+from book_checker.models import LibraryResult
 
 
-async def test_search(label: str, raw: dict) -> None:
+def print_results(label: str, results: list[LibraryResult]) -> None:
     """Print parsed results for a search."""
     print(f"\n{'=' * 60}")
     print(f"  {label}")
     print(f"{'=' * 60}")
-    print(f"Total results: {raw.get('totalResults', 0)}")
 
-    results = parse_search_results(raw)
     for i, result in enumerate(results, 1):
         print(f"\n--- Result {i} ---")
         print(f"  Title:  {result.title}")
@@ -37,18 +36,15 @@ async def test_search(label: str, raw: dict) -> None:
 
 async def main() -> None:
     async with VegaLibraryClient() as client:
-        # Title search: Wild Robot
-        raw = await client.search_by_title("Wild Robot", page_size=3)
-        await test_search('Title search: "Wild Robot"', raw)
+        results = await client.search_by_title("Wild Robot", page_size=3)
+        print_results('Title search: "Wild Robot"', results)
 
-        # Title search: Wings of Fire
-        raw = await client.search_by_title("Wings of Fire", page_size=3)
-        await test_search('Title search: "Wings of Fire"', raw)
+        results = await client.search_by_title("Wings of Fire", page_size=3)
+        print_results('Title search: "Wings of Fire"', results)
 
-        # ISBN search
         isbn = "9780316382007"
-        raw = await client.search_by_isbn(isbn, page_size=3)
-        await test_search(f"ISBN search: {isbn}", raw)
+        results = await client.search_by_isbn(isbn, page_size=3)
+        print_results(f"ISBN search: {isbn}", results)
 
 
 if __name__ == "__main__":
