@@ -2,24 +2,27 @@ from typing import Any
 
 import httpx
 
+from book_checker.config import Settings, get_settings
 from book_checker.models import LibraryAvailability, LibraryResult
-
-VEGA_API_URL = "https://na5.iiivega.com/api/search-result/search/format-groups"
-
-VEGA_HEADERS = {
-    "Content-Type": "application/json",
-    "iii-customer-domain": "mvpl.na5.iiivega.com",
-    "iii-host-domain": "librarycatalog.mountainview.gov",
-    "api-version": "2",
-}
 
 
 class VegaLibraryClient:
     """Client for the Mountain View Public Library Vega API."""
 
-    def __init__(self, timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        timeout: float = 10.0,
+    ) -> None:
+        settings = settings or get_settings()
+        self._api_url = settings.vega_api_url
         self._client = httpx.AsyncClient(
-            headers=VEGA_HEADERS,
+            headers={
+                "Content-Type": "application/json",
+                "iii-customer-domain": settings.vega_customer_domain,
+                "iii-host-domain": settings.vega_host_domain,
+                "api-version": "2",
+            },
             timeout=timeout,
         )
 
@@ -41,7 +44,7 @@ class VegaLibraryClient:
             "pageNum": page,
             "pageSize": page_size,
         }
-        resp = await self._client.post(VEGA_API_URL, json=payload)
+        resp = await self._client.post(self._api_url, json=payload)
         resp.raise_for_status()
         return resp.json()
 
