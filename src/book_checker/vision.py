@@ -53,3 +53,72 @@ def parse_vlm_response(text: str) -> list[IdentifiedBook]:
 
     raw: list[dict] = json.loads(text)
     return [IdentifiedBook(**item) for item in raw]
+
+
+_MIME_TYPES: dict[str, str] = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
+
+def _encode_image(path: Path) -> tuple[str, str]:
+    """Read an image file and return (base64_data, mime_type)."""
+    suffix = path.suffix.lower()
+    mime = _MIME_TYPES.get(suffix)
+    if mime is None:
+        raise ValueError(f"Unsupported image format: {suffix}")
+    data = path.read_bytes()
+    return base64.b64encode(data).decode(), mime
+
+
+async def identify_books(
+    image_path: str | Path,
+    *,
+    settings: Settings | None = None,
+) -> list[IdentifiedBook]:
+    """Send an image to the VLM and return identified books.
+
+    Uses ``openai.AsyncOpenAI`` so it works with both the OpenAI API
+    and any OpenAI-compatible backend (e.g. vLLM) by setting
+    ``openai_base_url`` in the project settings.
+    """
+    settings = settings or get_settings()
+    image_path = Path(image_path)
+
+    b64_data, mime = _encode_image(image_path)
+    image_url = f"data:{mime};base64,{b64_data}"
+
+    client = openai.AsyncOpenAI(
+        api_key=settings.openai_api_key,
+        base_url=settings.openai_base_url,
+    )
+
+    logger.info("Sending %s to VLM model %s", image_path.name, settings.openai_model)
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url, "detail": "high"},
+                    },
+                    {
+                        "type": "text",
+                        "text": "Identify every book visible in this image.",
+                    },
+                ],
+            },
+        ],
+    )
+
+    text = response.choices[0].message.content or ""
+    logger.debug("VLM raw response:\n%s", text)
+
+    return parse_vlm_response(text)
