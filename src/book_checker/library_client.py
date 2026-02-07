@@ -1,6 +1,9 @@
 import logging
+from typing import Any
 
 import httpx
+
+from book_checker.models import LibraryAvailability, LibraryResult
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +63,61 @@ class VegaLibraryClient:
     ) -> dict:
         """Search by keyword (general search text)."""
         return await self._search(keyword, page_size=page_size)
+
+
+def _parse_material_tab(tab: dict[str, Any]) -> LibraryAvailability:
+    """Parse a single materialTab entry into a LibraryAvailability."""
+    availability = tab.get("availability", {})
+    status_obj = availability.get("status", {})
+    general_status = status_obj.get("general", "Unknown")
+
+    location = tab.get("itemLibrary") or tab.get("name", "Unknown")
+    call_number = tab.get("callNumber")
+
+    return LibraryAvailability(
+        location=location,
+        call_number=call_number,
+        status=general_status,
+    )
+
+
+def parse_search_results(response: dict[str, Any]) -> list[LibraryResult]:
+    """Parse a Vega API response into a list of LibraryResult objects.
+
+    Extracts availability data from materialTabs for each format group
+    in the search results. Only physical items are included.
+    """
+    results: list[LibraryResult] = []
+    for item in response.get("data", []):
+        title = item.get("title")
+        agent = item.get("primaryAgent", {})
+        author = agent.get("label") if agent else None
+
+        # Collect ISBNs from physical materialTabs
+        isbn: str | None = None
+        availabilities: list[LibraryAvailability] = []
+
+        for tab in item.get("materialTabs", []):
+            if tab.get("type") != "physical":
+                continue
+
+            availabilities.append(_parse_material_tab(tab))
+
+            # Grab the first ISBN we find
+            if isbn is None:
+                identified = tab.get("identifiedBy", {})
+                isbn_list = identified.get("isbn", [])
+                if isbn_list:
+                    isbn = isbn_list[0]
+
+        results.append(
+            LibraryResult(
+                found=bool(availabilities),
+                title=title,
+                author=author,
+                isbn=isbn,
+                availabilities=availabilities,
+            )
+        )
+
+    return results
