@@ -5,9 +5,15 @@ import re
 from pathlib import Path
 
 import openai
+from pydantic import ValidationError
 
 from book_checker.config import Settings, get_settings
 from book_checker.models import IdentifiedBook
+
+
+class VisionError(Exception):
+    """Raised when book identification fails."""
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +57,20 @@ def parse_vlm_response(text: str) -> list[IdentifiedBook]:
     if match:
         text = match.group(1).strip()
 
-    raw = json.loads(text)
+    try:
+        raw = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise VisionError(f"VLM returned invalid JSON: {exc}") from exc
+
     if not isinstance(raw, list):
-        raise ValueError(
+        raise VisionError(
             f"Expected a JSON array from VLM, got {type(raw).__name__}"
         )
-    return [IdentifiedBook(**item) for item in raw]
+
+    try:
+        return [IdentifiedBook(**item) for item in raw]
+    except ValidationError as exc:
+        raise VisionError(f"VLM returned malformed book data: {exc}") from exc
 
 
 _MIME_TYPES: dict[str, str] = {
@@ -95,33 +109,38 @@ async def identify_books(
     b64_data, mime = _encode_image(image_path)
     image_url = f"data:{mime};base64,{b64_data}"
 
-    async with openai.AsyncOpenAI(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-    ) as client:
-        logger.info(
-            "Sending %s to VLM model %s", image_path.name, settings.openai_model
-        )
+    try:
+        async with openai.AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+        ) as client:
+            logger.info(
+                "Sending %s to VLM model %s",
+                image_path.name,
+                settings.openai_model,
+            )
 
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": image_url, "detail": "high"},
-                        },
-                        {
-                            "type": "text",
-                            "text": "Identify every book visible in this image.",
-                        },
-                    ],
-                },
-            ],
-        )
+            response = await client.chat.completions.create(
+                model=settings.openai_model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": image_url, "detail": "high"},
+                            },
+                            {
+                                "type": "text",
+                                "text": "Identify every book visible in this image.",
+                            },
+                        ],
+                    },
+                ],
+            )
+    except openai.APIError as exc:
+        raise VisionError(f"VLM API request failed: {exc}") from exc
 
     text = response.choices[0].message.content or ""
     logger.debug("VLM raw response:\n%s", text)
