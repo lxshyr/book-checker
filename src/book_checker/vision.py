@@ -91,32 +91,33 @@ async def identify_books(
     b64_data, mime = _encode_image(image_path)
     image_url = f"data:{mime};base64,{b64_data}"
 
-    client = openai.AsyncOpenAI(
+    async with openai.AsyncOpenAI(
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
-    )
+    ) as client:
+        logger.info(
+            "Sending %s to VLM model %s", image_path.name, settings.openai_model
+        )
 
-    logger.info("Sending %s to VLM model %s", image_path.name, settings.openai_model)
-
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": image_url, "detail": "high"},
-                    },
-                    {
-                        "type": "text",
-                        "text": "Identify every book visible in this image.",
-                    },
-                ],
-            },
-        ],
-    )
+        response = await client.chat.completions.create(
+            model=settings.openai_model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_url, "detail": "high"},
+                        },
+                        {
+                            "type": "text",
+                            "text": "Identify every book visible in this image.",
+                        },
+                    ],
+                },
+            ],
+        )
 
     text = response.choices[0].message.content or ""
     logger.debug("VLM raw response:\n%s", text)
