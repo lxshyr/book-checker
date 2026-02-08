@@ -51,7 +51,11 @@ def parse_vlm_response(text: str) -> list[IdentifiedBook]:
     if match:
         text = match.group(1).strip()
 
-    raw: list[dict] = json.loads(text)
+    raw = json.loads(text)
+    if not isinstance(raw, list):
+        raise ValueError(
+            f"Expected a JSON array from VLM, got {type(raw).__name__}"
+        )
     return [IdentifiedBook(**item) for item in raw]
 
 
