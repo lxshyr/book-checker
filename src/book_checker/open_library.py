@@ -64,12 +64,15 @@ class OpenLibraryClient:
                 return None
 
             isbn = isbn_list[0]
+            # Safely extract author name, avoiding IndexError on empty lists
+            author_names = first_doc.get("author_name", [])
+            author = author_names[0] if author_names else "Unknown"
             logger.info(
                 "Found ISBN %s for %r (from %s by %s)",
                 isbn,
                 query,
                 first_doc.get("title"),
-                first_doc.get("author_name", ["Unknown"])[0],
+                author,
             )
             return isbn
 
