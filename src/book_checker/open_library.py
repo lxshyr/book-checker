@@ -36,6 +36,11 @@ class OpenLibraryClient:
         Failures are logged but do not raise exceptions to ensure
         pipeline continues with title/author fallback.
         """
+        # Validate input before making API call
+        if not title or not title.strip():
+            logger.debug("Empty or whitespace-only title provided, skipping ISBN lookup")
+            return None
+
         query = ""  # Initialize early to avoid UnboundLocalError in exception handlers
         try:
             query_parts = [title]
