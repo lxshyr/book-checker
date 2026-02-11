@@ -89,11 +89,19 @@ class OpenLibraryClient:
             return isbn
 
         except httpx.HTTPStatusError as exc:
-            logger.warning(
-                "Open Library API returned %s for query %r",
-                exc.response.status_code,
-                query,
-            )
+            status_code = exc.response.status_code
+            if status_code == 429:
+                logger.warning(
+                    "Open Library API rate limit exceeded (429) for query %r. "
+                    "Consider implementing retry with exponential backoff.",
+                    query,
+                )
+            else:
+                logger.warning(
+                    "Open Library API returned %s for query %r",
+                    status_code,
+                    query,
+                )
             return None
         except httpx.RequestError as exc:
             logger.warning("Open Library API request failed for query %r: %s", query, exc)
