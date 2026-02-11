@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import httpx
 
@@ -129,9 +128,8 @@ async def enrich_with_isbn(
     try:
         async with OpenLibraryClient() as client:
             return await client.search_isbn(title, author)
-    except Exception as exc:
+    except Exception:
         # Catch-all for any unexpected errors to ensure pipeline continues
-        logger.warning("Unexpected error during ISBN enrichment for %r: %s", title, exc)
+        # Use logger.exception() to include full stack trace for debugging
+        logger.exception("Unexpected error during ISBN enrichment for %r", title)
         return None
-
-
