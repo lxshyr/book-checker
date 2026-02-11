@@ -31,6 +31,7 @@ class OpenLibraryClient:
         Failures are logged but do not raise exceptions to ensure
         pipeline continues with title/author fallback.
         """
+        query = ""  # Initialize early to avoid UnboundLocalError in exception handlers
         try:
             query_parts = [title]
             if author:
