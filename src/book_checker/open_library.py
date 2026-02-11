@@ -11,7 +11,12 @@ class OpenLibraryClient:
 
     def __init__(self, timeout: float = 10.0) -> None:
         self._base_url = "https://openlibrary.org"
-        self._client = httpx.AsyncClient(timeout=timeout)
+        self._client = httpx.AsyncClient(
+            timeout=timeout,
+            headers={
+                "User-Agent": "BookChecker/0.1 (https://github.com/lxshyr/book-checker)"
+            },
+        )
 
     async def close(self) -> None:
         await self._client.aclose()
