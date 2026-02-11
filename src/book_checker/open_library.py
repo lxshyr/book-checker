@@ -68,7 +68,9 @@ class OpenLibraryClient:
                 )
                 return None
 
-            isbn = isbn_list[0]
+            # Prefer ISBN-13 (13 digits) over ISBN-10 as it's the modern standard
+            isbn_13 = next((isbn for isbn in isbn_list if len(isbn) == 13), None)
+            isbn = isbn_13 or isbn_list[0]
             # Safely extract author name, avoiding IndexError on empty lists
             author_names = first_doc.get("author_name", [])
             author = author_names[0] if author_names else "Unknown"
