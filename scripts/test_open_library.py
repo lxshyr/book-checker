@@ -8,7 +8,7 @@ Usage (from repo root):
 
 import asyncio
 
-from book_checker.open_library import OpenLibraryClient
+from book_checker.open_library import OpenLibraryClient, enrich_with_isbn
 
 
 async def main() -> None:
@@ -40,7 +40,21 @@ async def main() -> None:
         print(f"Title: {title!r}")
         print(f"ISBN:  {isbn or '(not found)'}")
 
-        print("\n" + "=" * 60)
+    # Test 4: Using the fallback-safe enrichment helper with existing ISBN
+    print("\n--- Test 4: Enrichment with existing ISBN (fallback-safe) ---")
+    existing = "9781234567890"
+    result = await enrich_with_isbn("Some Title", existing_isbn=existing)
+    print(f"Existing ISBN: {existing}")
+    print(f"Result:        {result}")
+
+    # Test 5: Using the enrichment helper without ISBN
+    print("\n--- Test 5: Enrichment without existing ISBN (fallback-safe) ---")
+    result = await enrich_with_isbn("The Wild Robot", "Peter Brown")
+    print(f"Title:  'The Wild Robot'")
+    print(f"Author: 'Peter Brown'")
+    print(f"Result: {result or '(not found)'}")
+
+    print("\n" + "=" * 60)
 
 
 if __name__ == "__main__":

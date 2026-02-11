@@ -87,3 +87,27 @@ class OpenLibraryClient:
             return None
 
 
+async def enrich_with_isbn(
+    title: str, author: str | None = None, existing_isbn: str | None = None
+) -> str | None:
+    """Enrich a book with an ISBN from Open Library.
+
+    Returns the existing ISBN if already present, otherwise searches
+    Open Library. Returns None if enrichment fails or no ISBN found.
+
+    This function never raises exceptions - all errors are logged and
+    None is returned to ensure the pipeline can continue with title/author fallback.
+    """
+    if existing_isbn:
+        logger.debug("ISBN already present for %r, skipping enrichment", title)
+        return existing_isbn
+
+    try:
+        async with OpenLibraryClient() as client:
+            return await client.search_isbn(title, author)
+    except Exception as exc:
+        # Catch-all for any unexpected errors to ensure pipeline continues
+        logger.warning("Unexpected error during ISBN enrichment for %r: %s", title, exc)
+        return None
+
+
